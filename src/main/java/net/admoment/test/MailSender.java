@@ -90,13 +90,12 @@ public class MailSender implements MailService {
             multipart.addBodyPart(messageBodyPart);
 
 
-            Iterator iterator = attachments.iterator();
-            while(iterator.hasNext()){
-                    File cf = iterator.next();
+            for(Iterator<File> i = attachments.iterator(); i.hasNext(); ){
+                    File item = i.next();
                     messageBodyPart = new MimeBodyPart();
-                    DataSource source = new FileDataSource(cf);
+                    DataSource source = new FileDataSource(item);
                     messageBodyPart.setDataHandler(new DataHandler(source));
-                    messageBodyPart.setFileName(cf.getName());
+                    messageBodyPart.setFileName(item.getName());
                     multipart.addBodyPart(messageBodyPart);
             }
 
