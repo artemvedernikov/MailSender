@@ -16,5 +16,4 @@ public interface MailService {
     void addRecipient(String ... recipient);
     void addBody(String text, boolean isHTML);
     void addAttachment(File filename);
-    void withHost (String hostname);
 }

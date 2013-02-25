@@ -9,8 +9,14 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import java.io.File;
-import java.util.ArrayList;
+
+import java.util.Iterator;
 import java.util.Properties;
+import java.util.Set;
+import java.util.regex.*;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MailSender implements MailService {
 
@@ -19,10 +25,10 @@ public class MailSender implements MailService {
     private String login;
     private String password;
     private String subject;
-    private ArrayList<String> recipients;
+    private Set<String> recipients;
     private String text;
     private String HTML;
-    private ArrayList<File> attachments;
+    private Set<File> attachments;
 
 
     private MailSender(){
@@ -55,7 +61,7 @@ public class MailSender implements MailService {
             message.setFrom(new InternetAddress(login));
 
             // Set To: header field of the header.
-            Address[] array;
+            Set<Address> array;
             array = new InternetAddress[recipients.length];
             for (int i = 0; i < recipients.length; i ++){
                 array[i] = new InternetAddress(recipients[i]);
@@ -83,14 +89,15 @@ public class MailSender implements MailService {
             // Set text message part
             multipart.addBodyPart(messageBodyPart);
 
-            if (attachments != null){
-                for (int i = 0; i < attachments.length; i++){
+
+            Iterator iterator = attachments.iterator();
+            while(iterator.hasNext()){
+                    File cf = iterator.next();
                     messageBodyPart = new MimeBodyPart();
-                    DataSource source = new FileDataSource(attachments[i]);
+                    DataSource source = new FileDataSource(cf);
                     messageBodyPart.setDataHandler(new DataHandler(source));
-                    messageBodyPart.setFileName(attachments[i].getName());
+                    messageBodyPart.setFileName(cf.getName());
                     multipart.addBodyPart(messageBodyPart);
-                }
             }
 
 
@@ -107,7 +114,7 @@ public class MailSender implements MailService {
 
     @Override
     public void addSubject(String string) {
-        this.subject = subject;
+        this.subject = checkNotNull(subject);
     }
 
     @Override
@@ -143,25 +150,10 @@ public class MailSender implements MailService {
 
     @Override
     public void addAttachment(File filename) {
-        if (this.attachments == null) {
-            this.attachments = new File[1];
-            this.attachments[0] = filename;
-        } else{
-            File[] att = new File[this.attachments.length + 1];
-            for (int i = 0; i < this.attachments.length; i++) {
-                att[i] = this.attachments[i];
-            }
-            att[this.attachments.length] = filename;
-            this.attachments = att;
-
-        }
-
+        this.attachments.add(checkNotNull(filename));
     }
 
-    @Override
-    public void withHost(String hostname) {
-        this.host = hostname;
-    }
+
 
 
     public String getHost() {
@@ -180,7 +172,7 @@ public class MailSender implements MailService {
         return subject;
     }
 
-    public ArrayList<String> getRecipients() {
+    public Set<String> getRecipients() {
         return recipients;
     }
 
@@ -192,19 +184,20 @@ public class MailSender implements MailService {
         return HTML;
     }
 
-    public ArrayList<File> getAttachments() {
+    public Set<File> getAttachments() {
         return attachments;
     }
 
-    public static Builder<MailService> newBuilder(){
+    public static Builder<MailSender> newBuilder(){
         return new MailBuilder(new MailSender());
     }
 
-    public static class MailBuilder implements Builder<MailService>{
+    public static class MailBuilder implements Builder<MailSender>{
 
         private String login;
         private String password;
-        private ArrayList<String> recipient;
+        private String host;
+        private Set<String> recipient;
         final MailSender sender;
 
         public MailBuilder(MailSender sender){
@@ -212,29 +205,32 @@ public class MailSender implements MailService {
         }
 
         @Override
-        public MailService build() {
-            if ((login != null) && (password != null) && (recipient != null)) {
-                return sender;
-            }  else {
-                throw new NullPointerException();
-            }
+        public MailSender build() {
+
+            return this.sender;
         }
 
         public void withLogin(String login){
-            this.login = login;
+            this.login = checkNotNull(login);
         }
 
         public void withPassword(String password){
-            this.password = password;
+            this.password = checkNotNull(password);
+        }
+
+        public void withHost(String hostname) {
+            this.host = hostname;
         }
 
         public void withRecipient(String... recipient){
-            this.recipient = this.recipient.add(recipient);
+            String sDomen = "[a-z][a-z[0-9]\u005F\u002E\u002D]*[a-z||0-9]";
+            String sDomen2 = "(net||org||ru||info||com)";
+            for (int i = 0; i < checkNotNull(recipient).length; i++){
+                checkArgument(recipient[i].matches(sDomen + "@" + sDomen + "\u002E" + sDomen2));
+                this.recipient.add(recipient[i]);
+            }
 
         }
-
-
-
 
     }
 }
