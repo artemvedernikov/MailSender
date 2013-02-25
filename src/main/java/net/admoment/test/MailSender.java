@@ -9,6 +9,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Properties;
 
 public class MailSender implements MailService {
@@ -18,10 +19,11 @@ public class MailSender implements MailService {
     private String login;
     private String password;
     private String subject;
-    private String[] recipients;
+    private ArrayList<String> recipients;
     private String text;
     private String HTML;
-    private File[] attachments;
+    private ArrayList<File> attachments;
+
 
     private MailSender(){
 
@@ -162,7 +164,6 @@ public class MailSender implements MailService {
     }
 
 
-
     public String getHost() {
         return host;
     }
@@ -179,7 +180,7 @@ public class MailSender implements MailService {
         return subject;
     }
 
-    public String[] getRecipients() {
+    public ArrayList<String> getRecipients() {
         return recipients;
     }
 
@@ -191,7 +192,7 @@ public class MailSender implements MailService {
         return HTML;
     }
 
-    public File[] getAttachments() {
+    public ArrayList<File> getAttachments() {
         return attachments;
     }
 
@@ -203,7 +204,7 @@ public class MailSender implements MailService {
 
         private String login;
         private String password;
-        private String[] recipient;
+        private ArrayList<String> recipient;
         final MailSender sender;
 
         public MailBuilder(MailSender sender){
@@ -228,21 +229,11 @@ public class MailSender implements MailService {
         }
 
         public void withRecipient(String... recipient){
-            this.recipient = recipient;
+            this.recipient = this.recipient.add(recipient);
 
         }
 
-        public String getLogin() {
-            return login;
-        }
 
-        public String getPassword() {
-            return password;
-        }
-
-        public String[] getRecipient() {
-            return recipient;
-        }
 
 
     }

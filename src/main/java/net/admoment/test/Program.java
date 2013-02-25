@@ -58,14 +58,13 @@ public class Program {
             message.addRecipients(Message.RecipientType.BCC, array);
 
             // Set Subject: header field
-            message.setSubject("Test attached file");
+            message.setSubject("Test github link");
 
             // Create the message part
             BodyPart messageBodyPart = new MimeBodyPart();
 
             // Fill the message
-            messageBodyPart.setContent("<h1 style='color:Red'>This is actual message</h1>",
-                    "text/html");
+            messageBodyPart.setText("https://github.com/artemkorolev/MailSender/pull/1");
 
             // Create a multipar message
             Multipart multipart = new MimeMultipart();
