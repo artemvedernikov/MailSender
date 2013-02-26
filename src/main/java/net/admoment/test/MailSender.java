@@ -1,7 +1,6 @@
 package net.admoment.test;
 
 import org.apache.log4j.*;
-
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.FileDataSource;
@@ -29,6 +28,7 @@ public class MailSender implements MailService {
     private String text;
     private String HTML;
     private Set<File> attachments;
+    private Message.RecipientType type;
 
     private static final Logger log = Logger.getLogger(MailSender.class);
 
@@ -66,7 +66,7 @@ public class MailSender implements MailService {
 
             // Set To: header field of the header.
             Address[] array = recipients.toArray(new Address[recipients.size()]);
-            message.addRecipients(Message.RecipientType.BCC, array);  //no bcc but different
+            message.addRecipients(this.type, array);  //no bcc but different
 
             // Set Subject: header field
             message.setSubject(this.subject);
@@ -129,8 +129,6 @@ public class MailSender implements MailService {
 
     @Override
     public void addRecipient(String... recipient) {
-        String sDomen = "[a-z][a-z[0-9]\u005F\u002E\u002D]*[a-z||0-9]";
-        String sDomen2 = "(net||org||ru||info||com)";
         try{
             for (int i = 0; i < checkNotNull(recipient).length; i++){
                 Matcher m =  P.matcher(recipient[i]);
@@ -205,16 +203,21 @@ public class MailSender implements MailService {
         return attachments;
     }
 
+    public Message.RecipientType getType() {
+        return type;
+    }
+
     public static Builder<MailSender> newBuilder(){
         return new MailBuilder(new MailSender());
     }
 
     public static class MailBuilder implements Builder<MailSender>{
-        private String host = "secure.emailsrvr.com";
 
+        private String host = "secure.emailsrvr.com";
         private String login;
         private String password;
-        private Set<Address> recipient;
+        private Set<Address> recipients;
+        private Message.RecipientType type = Message.RecipientType.TO;
         final MailSender sender;
 
         public MailBuilder(MailSender sender){
@@ -223,7 +226,17 @@ public class MailSender implements MailService {
 
         @Override
         public MailSender build() {
+            try{
+                sender.login = checkNotNull(login);
+                sender.password = checkNotNull(password);
+                sender.recipients = checkNotNull(recipients);
+                sender.type = checkNotNull(type);
+                sender.host = checkNotNull(host);
+            }catch (NullPointerException e){
+                log.error(e);
+            }
 
+            log.debug("MailSender built");
             return this.sender;
         }
 
@@ -257,7 +270,7 @@ public class MailSender implements MailService {
                 for (int i = 0; i < checkNotNull(recipient).length; i++){
                     Matcher m =  P.matcher(recipient[i]);
                     checkArgument(m.matches());
-                    this.recipient.add(new InternetAddress(recipient[i]));
+                    this.recipients.add(new InternetAddress(recipient[i]));
                 }
             }  catch (AddressException e) {
                log.error(e);
@@ -266,6 +279,18 @@ public class MailSender implements MailService {
             }
         }
 
-
+        public void withRecipientType(String type){
+            try{
+                if (checkNotNull(type).equals("TO")){
+                    this.type = Message.RecipientType.TO;
+                } else if (checkNotNull(type).equals("CC")){
+                    this.type = Message.RecipientType.CC;
+                } else if (checkNotNull(type).equals("BCC")){
+                    this.type = Message.RecipientType.BCC;
+                }
+            }catch (NullPointerException e1){
+                log.error(e1);
+            }
+        }
     }
 }
