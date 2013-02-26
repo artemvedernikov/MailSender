@@ -189,37 +189,40 @@ public class MailSender implements MailService {
             return this.sender;
         }
 
-        public void withLogin(String login){
+        public MailBuilder withLogin(String login){
             try{
                 this.login = checkNotNull(login);
             }   catch (NullPointerException e1){
                 log.error(e1);
                 throw e1;
             }
+            return this;
         }
 
-        public void withPassword(String password){
+        public MailBuilder withPassword(String password){
             try{
                 this.password = checkNotNull(password);
             }catch (NullPointerException e1){
                 log.error(e1);
                 throw e1;
             }
+            return this;
         }
 
-        public void withHost(String hostname) {
+        public MailBuilder withHost(String hostname) {
             try{
                 this.host = checkNotNull(hostname);
             }   catch (NullPointerException e1){
                 log.error(e1);
                 throw e1;
             }
+            return this;
         }
 
 
         public enum Type{TO, CC, BCC};
 
-        public void withRecipientType(Type type){
+        public MailBuilder withRecipientType(Type type){
             try{
                 checkNotNull(type);
                 if (type.equals(Type.TO)){
@@ -233,6 +236,7 @@ public class MailSender implements MailService {
                 log.error(e1);
                 throw e1;
             }
+            return this;
         }
     }
 }
