@@ -7,6 +7,7 @@ import javax.activation.FileDataSource;
 import javax.mail.*;
 import javax.mail.internet.*;
 import java.io.File;
+import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
@@ -23,11 +24,7 @@ public class MailSender implements MailService {
 
     private String login;
     private String password;
-    private String subject;
     private Set<Address> recipients;
-    private String text;
-    private String HTML;
-    private Set<File> attachments;
     private Message.RecipientType type;
 
     private static final Logger log = Logger.getLogger(MailSender.class);
@@ -55,40 +52,68 @@ public class MailSender implements MailService {
         return session;
     }
 
-    private MimeMessage getMessage(){
+
+    private MimeMessage getMessage(String subject, Set<String> recipients){
         MimeMessage message = null;
-        try {
-            // Create a default MimeMessage object.
+        String[] recipients_array = recipients.toArray(new String[recipients.size()]);
+
+        try{
+            Address[] array = new Address[checkNotNull(recipients_array).length];
+            for (int i = 0; i < recipients_array.length; i++){
+                Matcher m =  P.matcher(recipients_array[i]);
+                checkArgument(m.matches());
+                array[i] = new InternetAddress(recipients_array[i]);
+            }
             message = new MimeMessage(this.getSession());
-
-            // Set From: header field of the header.
             message.setFrom(new InternetAddress(login));
+            message.addRecipients(this.type, array);
+            message.setSubject(subject);
+        } catch (MessagingException mex) {
+            mex.printStackTrace();
+            log.error(mex);
+        }   catch (NullPointerException e1){
+            log.error(e1);
+        }
+        return message;
+    }
 
-            // Set To: header field of the header.
-            Address[] array = recipients.toArray(new Address[recipients.size()]);
-            message.addRecipients(this.type, array);  //no bcc but different
 
-            // Set Subject: header field
-            message.setSubject(this.subject);
 
-            // Create the message part
+
+    @Override
+    public void send(String subject, String HTML, Set<String> recipients) {
+        try {
+            MimeMessage message = this.getMessage(subject, recipients);
+
             BodyPart messageBodyPart = new MimeBodyPart();
+            messageBodyPart.setContent(checkNotNull(HTML), "text/html");
 
-            // Fill the message
-            if (this.text != null){
-                messageBodyPart.setText(text);
-            }
-            if (this.HTML != null){
-                messageBodyPart.setContent(this.HTML, "text/html");
-            }
-
-            // Create a multipar message
             Multipart multipart = new MimeMultipart();
-            // Set text message part
+            multipart.addBodyPart(messageBodyPart);
+            message.setContent(multipart);
+
+            Transport.send(message);
+            log.debug("message sent");
+            }    catch (MessagingException mex) {
+                log.error(mex);
+            }
+        }
+
+
+    @Override
+    public void send(String subject, String HTML, Set<String> recipients, Set<File> attachments) {
+        try {
+            MimeMessage message = this.getMessage(subject, recipients);
+
+            BodyPart messageBodyPart = new MimeBodyPart();
+            messageBodyPart.setContent(checkNotNull(HTML), "text/html");
+
+
+            Multipart multipart = new MimeMultipart();
             multipart.addBodyPart(messageBodyPart);
 
 
-            for(Iterator<File> i = attachments.iterator(); i.hasNext(); ){
+            for(Iterator<File> i = checkNotNull(attachments).iterator(); i.hasNext(); ){
                 File item = i.next();
                 messageBodyPart = new MimeBodyPart();
                 DataSource source = new FileDataSource(item);
@@ -96,79 +121,17 @@ public class MailSender implements MailService {
                 messageBodyPart.setFileName(item.getName());
                 multipart.addBodyPart(messageBodyPart);
             }
-
-            // Send the complete message parts
             message.setContent(multipart);
 
-        }catch (MessagingException mex) {
-            mex.printStackTrace();
-            log.error(mex);
-        }
-        return message;
-    }
-
-    @Override
-    public void send() {
-         try{
-            // Send message
-            Transport.send(this.getMessage());
+            Transport.send(message);
             log.debug("message sent");
-        } catch (MessagingException mex) {
+        }    catch (MessagingException mex) {
             log.error(mex);
-        }
-    }
-
-    @Override
-    public void addSubject(String string) {
-        try{
-            this.subject = checkNotNull(subject);
-        }   catch (NullPointerException e1){
-            log.error(e1);
-        }
-    }
-
-    @Override
-    public void addRecipient(String... recipient) {
-        try{
-            for (int i = 0; i < checkNotNull(recipient).length; i++){
-                Matcher m =  P.matcher(recipient[i]);
-                checkArgument(m.matches());
-                this.recipients.add(new InternetAddress(recipient[i]));
-            }
-        }  catch (AddressException e) {
+        }    catch (NullPointerException e){
             log.error(e);
-        }   catch (NullPointerException e1){
-            log.error(e1);
         }
     }
 
-    @Override
-    public void addBody(String text, boolean isHTML) {
-        if (isHTML){
-            if (this.HTML == null){
-                this.HTML = checkNotNull(text);
-            } else {
-                StringBuffer sbuf = new StringBuffer(this.HTML);
-                this.HTML = new String(sbuf.append(checkNotNull(text)));
-            }
-        } else {
-            if (this.text == null){
-                this.text = checkNotNull(text);
-            } else {
-                StringBuffer sbuf = new StringBuffer(this.text);
-                this.text = new String(sbuf.append(checkNotNull(text)));
-            }
-         }
-    }
-
-    @Override
-    public void addAttachment(File filename) {
-        try{
-            this.attachments.add(checkNotNull(filename));
-        }catch (NullPointerException e1){
-            log.error(e1);
-        }
-    }
 
 
     public String getHost() {
@@ -183,25 +146,6 @@ public class MailSender implements MailService {
         return password;
     }
 
-    public String getSubject() {
-        return subject;
-    }
-
-    public Set<Address> getRecipients() {
-        return recipients;
-    }
-
-    public String getText() {
-        return text;
-    }
-
-    public String getHTML() {
-        return HTML;
-    }
-
-    public Set<File> getAttachments() {
-        return attachments;
-    }
 
     public Message.RecipientType getType() {
         return type;
@@ -216,9 +160,8 @@ public class MailSender implements MailService {
         private String host = "secure.emailsrvr.com";
         private String login;
         private String password;
-        private Set<Address> recipients;
         private Message.RecipientType type = Message.RecipientType.TO;
-        final MailSender sender;
+        private final MailSender sender;
 
         public MailBuilder(MailSender sender){
             this.sender = sender;
@@ -229,7 +172,6 @@ public class MailSender implements MailService {
             try{
                 sender.login = checkNotNull(login);
                 sender.password = checkNotNull(password);
-                sender.recipients = checkNotNull(recipients);
                 sender.type = checkNotNull(type);
                 sender.host = checkNotNull(host);
             }catch (NullPointerException e){
@@ -264,28 +206,17 @@ public class MailSender implements MailService {
             }
         }
 
-        public void withRecipient(String... recipient){
 
-            try{
-                for (int i = 0; i < checkNotNull(recipient).length; i++){
-                    Matcher m =  P.matcher(recipient[i]);
-                    checkArgument(m.matches());
-                    this.recipients.add(new InternetAddress(recipient[i]));
-                }
-            }  catch (AddressException e) {
-               log.error(e);
-            }   catch (NullPointerException e1){
-               log.error(e1);
-            }
-        }
+        public enum Type{TO, CC, BCC};
 
-        public void withRecipientType(String type){
+        public void withRecipientType(Type type){
             try{
-                if (checkNotNull(type).equals("TO")){
+                checkNotNull(type);
+                if (type.equals(Type.TO)){
                     this.type = Message.RecipientType.TO;
-                } else if (checkNotNull(type).equals("CC")){
+                } else if (type.equals(Type.CC)){
                     this.type = Message.RecipientType.CC;
-                } else if (checkNotNull(type).equals("BCC")){
+                } else if (type.equals(Type.BCC)){
                     this.type = Message.RecipientType.BCC;
                 }
             }catch (NullPointerException e1){

@@ -1,6 +1,7 @@
 package net.admoment.test;
 
 import java.io.File;
+import java.util.Set;
 
 /**
  * Created with IntelliJ IDEA.
@@ -11,9 +12,6 @@ import java.io.File;
  */
 public interface MailService {
 
-    void send();
-    void addSubject(String string);
-    void addRecipient(String ... recipient);
-    void addBody(String text, boolean isHTML);
-    void addAttachment(File filename);
+    void send(String subject, String HTML, Set<String> recipients);
+    void send(String subject, String HTML, Set<String> recipients, Set<File> attachments);
 }
