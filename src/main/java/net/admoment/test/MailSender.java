@@ -147,7 +147,7 @@ public class MailSender implements MailService {
         return type;
     }
 
-    public static Builder<MailSender> newBuilder(){
+    public static MailBuilder newBuilder(){
         return new MailBuilder();
     }
 
