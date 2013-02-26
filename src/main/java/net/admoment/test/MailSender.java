@@ -70,8 +70,6 @@ public class MailSender implements MailService {
             message.setSubject(subject);
         } catch (MessagingException mex) {
             throw new MailSenderException(mex);
-        }   catch (NullPointerException e1){
-            throw e1;
         }
         return message;
     }
@@ -127,9 +125,6 @@ public class MailSender implements MailService {
             log.debug("message sent");
         }    catch (MessagingException mex) {
             throw new MailSenderException(mex);
-        }    catch (NullPointerException e){
-            throw e;
-
         }
     }
 
@@ -166,45 +161,27 @@ public class MailSender implements MailService {
 
         @Override
         public MailSender build() {
-            MailSender sender = null;
-            try{
-                sender = new MailSender();
-                sender.login = checkNotNull(login);
-                sender.password = checkNotNull(password);
-                sender.type = checkNotNull(type);
-                sender.host = checkNotNull(host);
-            }catch (NullPointerException e){
-                throw e;
-            }
-
+            MailSender sender = new MailSender();
+            sender.login = checkNotNull(login);
+            sender.password = checkNotNull(password);
+            sender.type = checkNotNull(type);
+            sender.host = checkNotNull(host);
             log.debug("MailSender built");
             return sender;
         }
 
         public MailBuilder withLogin(String login){
-            try{
-                this.login = checkNotNull(login);
-            }   catch (NullPointerException e1){
-                throw e1;
-            }
+            this.login = checkNotNull(login);
             return this;
         }
 
         public MailBuilder withPassword(String password){
-            try{
-                this.password = checkNotNull(password);
-            }catch (NullPointerException e1){
-                throw e1;
-            }
+            this.password = checkNotNull(password);
             return this;
         }
 
         public MailBuilder withHost(String hostname) {
-            try{
-                this.host = checkNotNull(hostname);
-            }   catch (NullPointerException e1){
-                throw e1;
-            }
+            this.host = checkNotNull(hostname);
             return this;
         }
 
@@ -212,17 +189,13 @@ public class MailSender implements MailService {
         public enum Type{TO, CC, BCC};
 
         public MailBuilder withRecipientType(Type type){
-            try{
-                checkNotNull(type);
-                if (type.equals(Type.TO)){
-                    this.type = Message.RecipientType.TO;
-                } else if (type.equals(Type.CC)){
-                    this.type = Message.RecipientType.CC;
-                } else if (type.equals(Type.BCC)){
-                    this.type = Message.RecipientType.BCC;
-                }
-            }catch (NullPointerException e1){
-                throw e1;
+            checkNotNull(type);
+            if (type.equals(Type.TO)){
+                this.type = Message.RecipientType.TO;
+            }else if (type.equals(Type.CC)){
+                this.type = Message.RecipientType.CC;
+            }else if (type.equals(Type.BCC)){
+                this.type = Message.RecipientType.BCC;
             }
             return this;
         }
