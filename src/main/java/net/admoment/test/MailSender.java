@@ -17,7 +17,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MailSender implements MailService {
-    static final String SDOMEN= "[a-z][a-z[0-9]\u005F\u002E\u002D]*[a-z||0-9]";
+    static final String SDOMEN= "[a-z][a-z[0-9]\\-\\.\\_]*[a-z||0-9]";
     static final Pattern P = Pattern.compile(SDOMEN + "@" + SDOMEN + "\u002E" + SDOMEN);
 
     private String host = "secure.emailsrvr.com";
@@ -53,26 +53,24 @@ public class MailSender implements MailService {
     }
 
 
-    private MimeMessage getMessage(String subject, Set<String> recipients) throws MessagingException {
+    private MimeMessage getMessage(String subject, Set<String> recipients) {
         MimeMessage message = null;
-        String[] recipients_array = recipients.toArray(new String[recipients.size()]);
+        String[] RecipientsArray = recipients.toArray(new String[recipients.size()]);
 
         try{
-            Address[] array = new Address[checkNotNull(recipients_array).length];
-            for (int i = 0; i < recipients_array.length; i++){
-                Matcher m =  P.matcher(recipients_array[i]);
+            Address[] array = new Address[checkNotNull(RecipientsArray).length];
+            for (int i = 0; i < RecipientsArray.length; i++){
+                Matcher m =  P.matcher(RecipientsArray[i]);
                 checkArgument(m.matches());
-                array[i] = new InternetAddress(recipients_array[i]);
+                array[i] = new InternetAddress(RecipientsArray[i]);
             }
             message = new MimeMessage(this.getSession());
             message.setFrom(new InternetAddress(login));
             message.addRecipients(this.type, array);
             message.setSubject(subject);
         } catch (MessagingException mex) {
-            log.error(mex);
-            throw mex;
+            throw new MailSenderException(mex);
         }   catch (NullPointerException e1){
-            log.error(e1);
             throw e1;
         }
         return message;
@@ -82,12 +80,12 @@ public class MailSender implements MailService {
 
 
     @Override
-    public void send(String subject, String HTML, Set<String> recipients) throws MessagingException {
+    public void send(String subject, String BodyHtml, Set<String> recipients) {
         try {
             MimeMessage message = this.getMessage(subject, recipients);
 
             BodyPart messageBodyPart = new MimeBodyPart();
-            messageBodyPart.setContent(checkNotNull(HTML), "text/html");
+            messageBodyPart.setContent(checkNotNull(BodyHtml), "text/html");
 
             Multipart multipart = new MimeMultipart();
             multipart.addBodyPart(messageBodyPart);
@@ -96,20 +94,19 @@ public class MailSender implements MailService {
             Transport.send(message);
             log.debug("message sent");
             } catch (MessagingException mex) {
-                log.error(mex);
-                throw mex;
+                throw new MailSenderException(mex);
 
             }
         }
 
 
     @Override
-    public void send(String subject, String HTML, Set<String> recipients, Set<File> attachments) throws MessagingException {
+    public void send(String subject, String BodyHtml, Set<String> recipients, Set<File> attachments)  {
         try {
             MimeMessage message = this.getMessage(subject, recipients);
 
             BodyPart messageBodyPart = new MimeBodyPart();
-            messageBodyPart.setContent(checkNotNull(HTML), "text/html");
+            messageBodyPart.setContent(checkNotNull(BodyHtml), "text/html");
 
 
             Multipart multipart = new MimeMultipart();
@@ -129,10 +126,8 @@ public class MailSender implements MailService {
             Transport.send(message);
             log.debug("message sent");
         }    catch (MessagingException mex) {
-            log.error(mex);
-            throw mex;
+            throw new MailSenderException(mex);
         }    catch (NullPointerException e){
-            log.error(e);
             throw e;
 
         }
@@ -158,7 +153,7 @@ public class MailSender implements MailService {
     }
 
     public static Builder<MailSender> newBuilder(){
-        return new MailBuilder(new MailSender());
+        return new MailBuilder();
     }
 
     public static class MailBuilder implements Builder<MailSender>{
@@ -167,33 +162,29 @@ public class MailSender implements MailService {
         private String login;
         private String password;
         private Message.RecipientType type = Message.RecipientType.TO;
-        private final MailSender sender;
 
-        public MailBuilder(MailSender sender){
-            this.sender = sender;
-        }
 
         @Override
         public MailSender build() {
+            MailSender sender = null;
             try{
+                sender = new MailSender();
                 sender.login = checkNotNull(login);
                 sender.password = checkNotNull(password);
                 sender.type = checkNotNull(type);
                 sender.host = checkNotNull(host);
             }catch (NullPointerException e){
-                log.error(e);
                 throw e;
             }
 
             log.debug("MailSender built");
-            return this.sender;
+            return sender;
         }
 
         public MailBuilder withLogin(String login){
             try{
                 this.login = checkNotNull(login);
             }   catch (NullPointerException e1){
-                log.error(e1);
                 throw e1;
             }
             return this;
@@ -203,7 +194,6 @@ public class MailSender implements MailService {
             try{
                 this.password = checkNotNull(password);
             }catch (NullPointerException e1){
-                log.error(e1);
                 throw e1;
             }
             return this;
@@ -213,7 +203,6 @@ public class MailSender implements MailService {
             try{
                 this.host = checkNotNull(hostname);
             }   catch (NullPointerException e1){
-                log.error(e1);
                 throw e1;
             }
             return this;
@@ -233,7 +222,6 @@ public class MailSender implements MailService {
                     this.type = Message.RecipientType.BCC;
                 }
             }catch (NullPointerException e1){
-                log.error(e1);
                 throw e1;
             }
             return this;

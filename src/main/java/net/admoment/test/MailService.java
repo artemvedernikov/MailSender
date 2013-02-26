@@ -13,6 +13,6 @@ import java.util.Set;
  */
 public interface MailService {
 
-    void send(String subject, String HTML, Set<String> recipients) throws MessagingException;
-    void send(String subject, String HTML, Set<String> recipients, Set<File> attachments) throws MessagingException;
+    void send(String subject, String HTML, Set<String> recipients);
+    void send(String subject, String HTML, Set<String> recipients, Set<File> attachments);
 }
